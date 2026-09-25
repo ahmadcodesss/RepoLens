@@ -1,5 +1,9 @@
-from mcp.server.mcpserver import MCPServer
+from urllib.parse import urlparse
+
 import httpx
+from mcp.server import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+
 
 mcp = MCPServer("RepoLens")
 
@@ -10,25 +14,50 @@ def get_repository(repo_url: str) -> dict:
     Get basic information about a GitHub repository.
     """
 
-    parts = repo_url.rstrip("/").split("/")
+    # Parse the GitHub URL
+    parsed_url = urlparse(repo_url)
 
-    if len(parts) < 2 or parts[-2] == "github.com":
-        raise ValueError("Invalid GitHub repository URL")
+    # Make sure the URL belongs to GitHub
+    if parsed_url.netloc != "github.com":
+        raise ToolError("Please provide a GitHub repository URL.")
 
-    owner = parts[-2]
-    repo = parts[-1].removesuffix(".git")
+    # Extract owner and repository name
+    path_parts = parsed_url.path.strip("/").split("/")
 
-    url = f"https://api.github.com/repos/{owner}/{repo}"
+    if len(path_parts) != 2:
+        raise ToolError(
+            "Invalid repository URL. Use: https://github.com/owner/repository"
+        )
 
-    response = httpx.get(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json"
-        },
-        timeout=10
-    )
+    owner = path_parts[0]
+    repo = path_parts[1].removesuffix(".git")
 
-    response.raise_for_status()
+    # GitHub REST API endpoint
+    api_url = f"https://api.github.com/repos/{owner}/{repo}"
+
+    try:
+        response = httpx.get(
+            api_url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2026-03-10",
+            },
+            timeout=10,
+            follow_redirects=True,
+        )
+
+        response.raise_for_status()
+
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise ToolError("Repository not found on GitHub.")
+
+        raise ToolError(
+            f"GitHub API returned status code {e.response.status_code}."
+        )
+
+    except httpx.RequestError:
+        raise ToolError("Could not connect to the GitHub API.")
 
     data = response.json()
 
