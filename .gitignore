@@ -1,35 +1,72 @@
-# Virtual environment
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 venv/
 .venv/
 env/
+ENV/
 
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Environment variables / secrets
-.env
-.env.*
-
-# VS Code
-.vscode/
-
-# PyCharm
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Build files
+# Python packaging
 build/
 dist/
 *.egg-info/
+
+# =========================
+# Environment / Secrets
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+# Testing / Coverage
+# =========================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# =========================
+# Type checkers / Linters
+# =========================
+
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# =========================
+# IDEs / Editors
+# =========================
+
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Temporary files
+# =========================
+
+*.log
+*.tmp
+*.temp
+
+# =========================
+# Local project data
+# =========================
+
+data/
+logs/
