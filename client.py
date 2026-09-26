@@ -45,5 +45,14 @@ async def main():
         print(result)
 
 
+                # 4. Test get_file_content
+        print("\n--- get_file_content ---")
+        result = await client.call_tool(
+            "get_file_content",
+            {"repo_url": REPO_URL, "path": "package.json"}
+        )
+        print(result)
+
+
 if __name__ == "__main__":
     anyio.run(main)
