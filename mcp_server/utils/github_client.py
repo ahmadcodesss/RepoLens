@@ -28,6 +28,16 @@ def github_get(path: str, params: dict | None = None) -> dict | list:
     response.raise_for_status()
     return response.json()
 
+def get_repo_tree_items(owner: str, repo: str) -> list:
+    repo_data = github_get(f"/repos/{owner}/{repo}")
+    branch = repo_data["default_branch"]
+
+    tree_data = github_get(
+        f"/repos/{owner}/{repo}/git/trees/{branch}",
+        params={"recursive": "1"}
+    )
+
+    return [item for item in tree_data["tree"] if item["type"] == "blob"]
 
 def decode_base64_content(encoded_content: str) -> str:
     return base64.b64decode(encoded_content).decode("utf-8")
