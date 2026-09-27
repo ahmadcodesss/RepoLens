@@ -1,48 +1,43 @@
 import os
-from google import genai
-from google.genai import types
+from groq import Groq
 from dotenv import load_dotenv
-import time
-from google.genai import errors
+
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "openai/gpt-oss-120b"
 
 
-def convert_mcp_tools_to_gemini(mcp_tools: list):
+def convert_mcp_tools_to_openai_format(mcp_tools: list) -> list:
     """
-    Converts MCP tool definitions (from client.list_tools()) into
-    Gemini's FunctionDeclaration format.
+    Converts MCP tool definitions into OpenAI/Groq's function-calling format.
     """
-    function_declarations = []
+    tools = []
 
     for tool in mcp_tools:
-        function_declarations.append(
-            types.FunctionDeclaration(
-                name=tool.name,
-                description=tool.description or "",
-                parameters=tool.input_schema,
-            )
-        )
+        tools.append({
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description or "",
+                "parameters": tool.input_schema,
+            }
+        })
 
-    return [types.Tool(function_declarations=function_declarations)]
+    return tools
 
 
-def call_llm(contents: list, gemini_tools: list, max_retries=5):
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=contents,
-                config=types.GenerateContentConfig(tools=gemini_tools)
-            )
-            return response
-        except errors.ClientError as e:
-            if e.code == 429 and attempt < max_retries - 1:
-                wait_time = 30
-                print(f"  [Rate limited, waiting {wait_time}s before retry...]")
-                time.sleep(wait_time)
-            else:
-                raise
+def call_llm(messages: list, tools: list):
+    """
+    Sends the conversation + available tools to Groq.
+    Returns the raw response object.
+    """
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        tools=tools,
+        tool_choice="auto"
+    )
+
+    return response
