@@ -23,13 +23,22 @@ async def run_agent(user_message: str) -> str:
         while True:
             response = call_llm(contents, gemini_tools)
 
-            part = response.candidates[0].content.parts[0]
+            candidate_content = response.candidates[0].content
+            contents.append(candidate_content)
 
-            contents.append(response.candidates[0].content)
+            function_call_part = None
+            text_parts = []
 
-            if part.function_call:
-                tool_name = part.function_call.name
-                tool_args = dict(part.function_call.args)
+            for part in candidate_content.parts:
+                if part.function_call and part.function_call.name:
+                    function_call_part = part
+                    break
+                elif part.text:
+                    text_parts.append(part.text)
+
+            if function_call_part:
+                tool_name = function_call_part.function_call.name
+                tool_args = dict(function_call_part.function_call.args)
 
                 print(f"  [Agent is calling tool: {tool_name}({tool_args})]")
 
@@ -48,7 +57,7 @@ async def run_agent(user_message: str) -> str:
                     )
                 )
             else:
-                return part.text
+                return " ".join(text_parts)
 
 
 if __name__ == "__main__":
