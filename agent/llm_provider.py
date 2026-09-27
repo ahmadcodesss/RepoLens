@@ -1,6 +1,8 @@
 import os
 from groq import Groq
 from dotenv import load_dotenv
+import time
+from groq import APIStatusError
 
 load_dotenv()
 
@@ -28,16 +30,18 @@ def convert_mcp_tools_to_openai_format(mcp_tools: list) -> list:
     return tools
 
 
-def call_llm(messages: list, tools: list):
-    """
-    Sends the conversation + available tools to Groq.
-    Returns the raw response object.
-    """
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        tools=tools,
-        tool_choice="auto"
-    )
-
-    return response
+def call_llm(messages: list, tools: list, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto"
+            )
+        except APIStatusError as e:
+            if e.status_code in (429, 413) and attempt < max_retries - 1:
+                print(f"  [Hit rate/size limit, waiting 20s before retry...]")
+                time.sleep(20)
+            else:
+                raise
