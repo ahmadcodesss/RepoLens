@@ -4,11 +4,32 @@ import anyio
 from mcp import Client, StdioServerParameters
 from agent.llm_provider import convert_mcp_tools_to_openai_format, call_llm
 
+SYSTEM_PROMPT = (
+    "You are RepoLens, a terminal-based GitHub repository analyzer. "
+    "When giving your final answer, write in plain text only. "
+    "Do not use markdown formatting: no asterisks for bold, no pound signs for headers, "
+    "no HTML tags like <br>, no markdown tables. "
+    "Use plain paragraphs, and simple dashes (-) for lists. "
+    "Keep it clean and readable in a plain terminal."
+)
+
+
+
+
 server = StdioServerParameters(
     command="python",
     args=["-m", "mcp_server.server"],
 )
 
+import re
+
+def clean_output(text: str) -> str:
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"\*(.*?)\*", r"\1", text)
+    text = re.sub(r"<br\s*/?>", "\n", text)
+    text = re.sub(r"#{1,6}\s*", "", text)
+    text = re.sub(r"\|", " ", text)
+    return text.strip()
 
 async def run_agent(user_message: str) -> str:
     async with Client(server) as mcp_client:
@@ -17,6 +38,7 @@ async def run_agent(user_message: str) -> str:
         tools = convert_mcp_tools_to_openai_format(mcp_tools_result.tools)
 
         messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message}
         ]
 
@@ -43,7 +65,7 @@ async def run_agent(user_message: str) -> str:
                         "content": result_text
                     })
             else:
-                return message.content
+                return clean_output(message.content)
 
 
 if __name__ == "__main__":
