@@ -1,26 +1,45 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-MODEL_NAME = "gemini-2.0-flash"
+MODEL_NAME = "gemini-3.8-flash"
 
 
-def call_llm(conversation: list, tools: list):
+def convert_mcp_tools_to_gemini(mcp_tools: list):
     """
-    Sends the conversation + available tools to Gemini.
-    Returns Gemini's response object (caller will inspect it for
-    either a text answer or a function call request).
+    Converts MCP tool definitions (from client.list_tools()) into
+    Gemini's FunctionDeclaration format.
     """
-    model = genai.GenerativeModel(
-        model_name=MODEL_NAME,
-        tools=tools
+    function_declarations = []
+
+    for tool in mcp_tools:
+        function_declarations.append(
+            types.FunctionDeclaration(
+                name=tool.name,
+                description=tool.description or "",
+                parameters=tool.input_schema,
+            )
+        )
+
+    return [types.Tool(function_declarations=function_declarations)]
+
+
+def call_llm(contents: list, gemini_tools: list):
+    """
+    Sends the full conversation + available tools to Gemini.
+    Returns Gemini's response object.
+    """
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            tools=gemini_tools
+        )
     )
-
-    chat = model.start_chat(history=conversation[:-1])
-    response = chat.send_message(conversation[-1])
 
     return response
