@@ -1,36 +1,22 @@
-from mcp_server.utils.github_client import parse_repo_url, github_get
+from mcp_server.utils.github_client import parse_repo_url, github_get, get_repo_tree_items
 
 
 def get_repo_tree(repo_url: str) -> dict:
-    """
-    Get the full file/folder structure of a GitHub repository.
-    """
     owner, repo = parse_repo_url(repo_url)
 
-    # First, get the repo's default branch
     repo_data = github_get(f"/repos/{owner}/{repo}")
     branch = repo_data["default_branch"]
 
-    # Get the tree (recursive=1 fetches ALL nested files/folders in one call)
-    tree_data = github_get(
-        f"/repos/{owner}/{repo}/git/trees/{branch}",
-        params={"recursive": "1"}
-    )
+    files = get_repo_tree_items(owner, repo)
 
-    files = []
-    folders = []
-
-    for item in tree_data["tree"]:
-        if item["type"] == "blob":  # blob = file
-            files.append(item["path"])
-        elif item["type"] == "tree":  # tree = folder
-            folders.append(item["path"])
+    folder_counts = {}
+    for item in files:
+        parts = item["path"].split("/")
+        top_folder = parts[0] if len(parts) > 1 else "(root)"
+        folder_counts[top_folder] = folder_counts.get(top_folder, 0) + 1
 
     return {
         "branch": branch,
         "total_files": len(files),
-        "total_folders": len(folders),
-        "files": files,
-        "folders": folders,
-        "truncated": tree_data.get("truncated", False)
+        "top_level_structure": folder_counts
     }
