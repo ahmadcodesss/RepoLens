@@ -23,4 +23,7 @@ def print_answer(answer: str):
     )
     console.print()
 
+def print_error(message: str):
+    console.print(Panel(Text(message), title="Error", border_style="red", padding=(0, 2)))
+    console.print()
 
