@@ -142,7 +142,16 @@ def describe_error(exc: BaseException) -> str:
     return "Something unexpected went wrong. Details were written to repolens.log."
 
 
-if __name__ == "__main__":
+URL_PATTERN = re.compile(r"^https?://github\.com/[\w.-]+/[\w.-]+/?$")
+
+
+def is_valid_repo_url(url: str) -> bool:
+    return bool(URL_PATTERN.match(url.rstrip("/").removesuffix(".git")))
+
+
+
+
+def main():
     setup_logging()
     print_banner()
 
@@ -151,7 +160,14 @@ if __name__ == "__main__":
 
         if repo_url.lower() == "exit":
             console.print("[dim]Goodbye![/]")
-            break
+            return
+
+        while not is_valid_repo_url(repo_url):
+            console.print("[yellow]That doesn't look like a GitHub repo URL. Example: https://github.com/owner/repo[/]")
+            repo_url = console.input("[bold cyan]Repo URL:[/] ").strip()
+            if repo_url.lower() == "exit":
+                console.print("[dim]Goodbye![/]")
+                return
 
         question = console.input("[bold cyan]Question:[/] ").strip()
 
@@ -169,3 +185,7 @@ if __name__ == "__main__":
             continue
 
         print_answer(answer)
+
+
+if __name__ == "__main__":
+    main()
