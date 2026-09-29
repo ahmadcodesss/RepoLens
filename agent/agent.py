@@ -66,7 +66,7 @@ async def execute_tool_call(mcp_client, tool_call) -> str:
         log.warning("Invalid arguments for %s: %r", name, tool_call.function.arguments)
         return "Error: the tool arguments were not valid JSON."
 
-    print(f"  [Agent is calling tool: {name}({args})]")
+    
 
     try:
         result = await mcp_client.call_tool(name, args)
