@@ -1,5 +1,5 @@
 # RepoLens
-[![M8ven Score](https://m8ven.ai/badge/mcp/ahmadcodesss/repolens)](https://m8ven.ai/mcp/ahmadcodesss/repolens?s=readme)
+[![M8ven Score](https://m8ven.ai/badge/mcp/ahmadcodesss-repolens-1e44m7?v=0df820a298339c2b5f48285cdef657e3)](https://m8ven.ai/mcp/ahmadcodesss-repolens-1e44m7?s=readme)
 <br>
 An AI agent that answers questions about any GitHub repository, straight from your terminal.
 
